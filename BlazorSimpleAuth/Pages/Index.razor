@@ -1,0 +1,29 @@
+﻿@page "/"
+@inject IAuthenticationService Auth
+<PageTitle>Index</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+<AuthorizeView>
+    <Authorized>
+        <div class="mt-3">
+            <p>Hello, @context.User.Identity!.Name!</p>
+            <button type="submit" class="btn btn-primary" @onclick="OnLogout">
+                <text>Logout</text>
+            </button>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <Login />
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private void OnLogout()
+    {
+        // Logout user and update application state
+        Auth.Logout();
+    }
+}

@@ -1,0 +1,71 @@
+﻿@using System.Security.Claims;
+@inject NavigationManager Nav
+@inject IAuthenticationService Auth
+@inject AuthenticationStateProvider AuthState
+
+@attribute [AllowAnonymous]
+
+<div class="container mt-3">
+    <div class="row d-flex justify-content-center">
+        <div class="col-12 col-lg-6">
+            <EditForm Model="@_loginUser" OnValidSubmit="() => OnLogin()">
+                <DataAnnotationsValidator />
+                <div class="input-group mb-3">
+                    <span class="input-group-text" style="width: 100px;">Username</span>
+                    <InputText class="form-control" @bind-Value="_loginUser.Username" disabled="@_authenticating" />
+                    <div class="text-danger">
+                        <ValidationMessage For="@(() => _loginUser.Username)" />
+                    </div>
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text" style="width: 100px;">Password</span>
+                    <InputText class="form-control" type="password" @bind-Value="_loginUser.Password" disabled="@_authenticating" />
+                    <div class="text-danger">
+                        <ValidationMessage For="@(() => _loginUser.Password)" />
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100" disabled="@_authenticating">
+                    <text>Login</text>
+                </button>
+                @if (_loginFailed)
+                {
+                    <div class="alert alert-danger mt-3" role="alert">
+                        <strong>Invalid username or password</strong>
+                    </div>
+                }
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginUserModel _loginUser = new();
+    private bool _authenticating = false;
+    private bool _loginFailed = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthenticationState authState = await AuthState.GetAuthenticationStateAsync();
+        ClaimsPrincipal user = authState.User;
+
+        if (user is not null 
+            && user.Identity is not null
+            && user.Identity.IsAuthenticated)
+        {
+            Nav.NavigateTo("");
+        }
+    }
+
+    private void OnLogin()
+    {
+        _loginFailed = false;
+
+        // Authenticate user and update application state
+        bool result = Auth.Login(_loginUser);
+
+        if(!result)
+        {
+            _loginFailed = true;
+        }
+    }
+}
