@@ -18,6 +18,8 @@ public class AuthenticationService : IAuthenticationService
         ArgumentNullException.ThrowIfNull(loginUser.Username);
         ArgumentNullException.ThrowIfNull(loginUser.Password);
 
+        // This code here would never fly in production, and is for demo purposes only. This is
+        // the spot you would farm out your authentication to a proper identity provider.
         if (loginUser.Username.Equals("admin", StringComparison.InvariantCultureIgnoreCase)
             && loginUser.Password.Equals("password", StringComparison.InvariantCultureIgnoreCase))
         {
