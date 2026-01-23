@@ -1,0 +1,66 @@
+﻿@using System.Security.Claims;
+@inject NavigationManager Nav
+@inject IAuthenticationService Auth
+@inject AuthenticationStateProvider AuthState
+@attribute [AllowAnonymous]
+
+<div class="container mt-3">
+    <div class="row d-flex justify-content-center">
+        <div class="col-12 col-lg-6">
+            <EditForm Enhance method="post" FormName="loginForm" Model="LoginUser" OnSubmit="() => HandleLoginAsync()">
+                <DataAnnotationsValidator />
+
+                <div class="input-group mb-3">
+                    <span class="input-group-text" style="width: 100px;">Username</span>
+                    <InputText class="form-control" @bind-Value="LoginUser!.Username" />
+                    <div class="text-danger">
+                        <ValidationMessage For="@(() => LoginUser.Username)" />
+                    </div>
+                </div>
+                
+                <div class="input-group mb-3">
+                    <span class="input-group-text" style="width: 100px;">Password</span>
+                    <InputText class="form-control" type="password" @bind-Value="LoginUser.Password" />
+                    <div class="text-danger">
+                        <ValidationMessage For="@(() => LoginUser.Password)" />
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Login</button>
+            </EditForm>
+            <Notification Class="my-3" @ref="_notification" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm(FormName = "loginForm")]
+    private LoginUserModel? LoginUser { get; set; }
+
+    private Notification? _notification;
+
+    protected override async Task OnInitializedAsync()
+    {
+        LoginUser ??= new();
+    }
+
+    private async Task HandleLoginAsync()
+    {
+        _notification!.ResetAlert();
+        bool result = await Auth.LoginAsync(LoginUser!);
+
+        if (result == false)
+        {
+            _notification.AlertError("Invalid username or password");
+            return;
+        }
+
+        AuthenticationState authState = await AuthState.GetAuthenticationStateAsync();
+        ClaimsPrincipal user = authState.User;
+
+        if (user?.Identity?.IsAuthenticated == true)
+        {
+            Nav.NavigateTo("");
+        }
+    }
+}

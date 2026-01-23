@@ -1,8 +1,9 @@
 ﻿using BlazorSimpleAuth.Models;
 
 namespace BlazorSimpleAuth.Authentication;
+
 public interface IAuthenticationService
 {
-    bool Login(LoginUserModel loginUser);
-    void Logout();
+    Task<bool> LoginAsync(LoginUserModel loginUser);
+    Task LogoutAsync();
 }

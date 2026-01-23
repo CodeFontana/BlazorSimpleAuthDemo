@@ -1,39 +1,65 @@
-﻿using BlazorSimpleAuth.Models;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
-using System.Security.Claims;
 
 namespace BlazorSimpleAuth.Authentication;
 
 public sealed class SimpleAuthStateProvider : AuthenticationStateProvider
 {
     private readonly AuthenticationState _anonymous;
-    private ClaimsIdentity _identity = new();
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public SimpleAuthStateProvider()
+    public SimpleAuthStateProvider(IHttpContextAccessor httpContextAccessor,
+                                   NavigationManager navMan)
     {
         _anonymous = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public override Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        ClaimsPrincipal user = new(_identity);
-        return Task.FromResult(new AuthenticationState(user));
+        HttpContext? httpContext = _httpContextAccessor.HttpContext;
+
+        if (httpContext is null)
+            return Task.FromResult(_anonymous);
+
+        ClaimsPrincipal? user = httpContext.User;
+
+        // Ensure we only treat cookie-authenticated identities as signed in
+        if (user?.Identity?.IsAuthenticated == true
+            && (user.Identity.AuthenticationType == CookieAuthenticationDefaults.AuthenticationScheme
+                || string.Equals(user.Identity.AuthenticationType, "Cookies", StringComparison.Ordinal)))
+        {
+            return Task.FromResult(new AuthenticationState(user));
+        }
+
+        return Task.FromResult(_anonymous);
     }
 
-    public void NotifyLoginUser(LoginUserModel loginUser)
+    public async Task NotifyUserAuthenticationAsync()
     {
-        ArgumentNullException.ThrowIfNull(loginUser);
-        ArgumentNullException.ThrowIfNull(loginUser.Username);
-        ArgumentNullException.ThrowIfNull(loginUser.Password);
+        try
+        {
+            ClaimsIdentity identity = new(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                ClaimTypes.Name,
+                ClaimTypes.Role);
 
-        _identity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, loginUser.Username) }, "SimpleDemo");
-        ClaimsPrincipal user = new(_identity);
-        NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(user)));
+            ClaimsPrincipal principal = new(identity);
+            Task<AuthenticationState> authState = Task.FromResult(new AuthenticationState(principal));
+            NotifyAuthenticationStateChanged(authState);
+            await Task.CompletedTask;
+        }
+        catch (Exception)
+        {
+            NotifyUserLogout();
+            throw;
+        }
     }
 
     public void NotifyUserLogout()
     {
-        _identity = new ClaimsIdentity();
         NotifyAuthenticationStateChanged(Task.FromResult(_anonymous));
     }
 }

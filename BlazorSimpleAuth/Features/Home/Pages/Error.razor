@@ -1,0 +1,32 @@
+﻿@page "/Error"
+@using System.Diagnostics
+@using Microsoft.AspNetCore.Diagnostics
+
+<PageTitle>Error</PageTitle>
+
+@if (string.IsNullOrWhiteSpace(_exceptionMessage) == false)
+{
+    <AlertError Class="mt-3" Message="@_exceptionMessage" StackTrace="@_stackTrace" />
+}
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    [CascadingParameter]
+    public required string EnvironmentName { get; set; }
+
+    private string? _exceptionMessage;
+    private string? _stackTrace;
+
+    protected override void OnInitialized()
+    {
+        IExceptionHandlerPathFeature? exceptionHandlerPathFeature = HttpContext?.Features.Get<IExceptionHandlerPathFeature>();
+
+        if (exceptionHandlerPathFeature?.Error is not null)
+        {
+            _exceptionMessage = exceptionHandlerPathFeature.Error.Message;
+            _stackTrace = exceptionHandlerPathFeature.Error.StackTrace;
+        }
+    }
+}

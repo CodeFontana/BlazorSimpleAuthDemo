@@ -1,0 +1,33 @@
+﻿@page "/"
+@inject IAuthenticationService Auth
+
+<PageTitle>Index</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+<AuthorizeView Context="authContext">
+    <Authorized>
+        <div class="mt-3">
+            <p>Hello, @authContext.User.Identity!.Name!</p>
+
+            <form method="post" @formname="logoutForm" @onsubmit="() => HandleLogoutAsync()">
+                <AntiforgeryToken />
+                <button type="submit" class="btn btn-primary">
+                    Logout
+                </button>
+            </form>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <Login />
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private async Task HandleLogoutAsync()
+    {
+        await Auth.LogoutAsync();
+    }
+}
